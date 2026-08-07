@@ -7,6 +7,15 @@ from .routers import productos, clientes, ventas, caja, pedidos, configuracion
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Papelera POS - API")
+# =====================================
+# VERSION DEL SISTEMA
+# =====================================
+
+@app.get("/version")
+def obtener_version():
+    return {
+        "version": "1.0.0"
+    }
 
 # CORS abierto: así el celular y la PC (o cualquier dispositivo) pueden
 # consumir la API sin bloqueos del navegador. Cuando tengas el dominio
