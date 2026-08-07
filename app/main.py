@@ -14,7 +14,8 @@ app = FastAPI(title="Papelera POS - API")
 @app.get("/version")
 def obtener_version():
     return {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "mensaje": "Papelera POS actualizado"
     }
 
 # CORS abierto: así el celular y la PC (o cualquier dispositivo) pueden
