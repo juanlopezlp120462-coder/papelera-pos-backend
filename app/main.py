@@ -16,7 +16,7 @@ def obtener_version():
     return {
         "version": "1.0.1",
         "mensaje": "Papelera POS actualizado",
-        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-backend/releases/download/v1.0.1/PAPELERA_POS.zip"
+        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-backend/releases/download/v1.0.1/UPDATE_1.0.1.zip"
     }
 
 # CORS abierto: así el celular y la PC (o cualquier dispositivo) pueden
