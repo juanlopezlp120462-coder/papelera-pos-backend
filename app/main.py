@@ -23,7 +23,7 @@ def obtener_version():
     return {
         "version": "1.0.32",
         "mensaje": "Papelera POS actualizado",
-        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-desktop/releases/download/v1.0.30/UPDATE.zip"
+        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-desktop/releases/download/v1.0.32/UPDATE.zip"
     }
 
     archivo = os.path.join(
