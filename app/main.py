@@ -20,6 +20,11 @@ app = FastAPI(title="Papelera POS - API")
 
 @app.get("/version")
 def obtener_version():
+    return {
+        "version": "1.0.30",
+        "mensaje": "Papelera POS actualizado",
+        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-desktop/releases/download/v1.0.30/UPDATE.zip"
+    }
 
     archivo = os.path.join(
         os.path.dirname(__file__),
