@@ -38,7 +38,7 @@ def obtener_version():
 
         for archivo in release.get("assets", []):
 
-            if archivo["name"] == "UPDATE.zip":
+            if archivo["name"].lower().endswith(".zip"):
                 url_update = archivo["browser_download_url"]
                 break
 
