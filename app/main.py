@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,11 +21,50 @@ app = FastAPI(title="Papelera POS - API")
 
 @app.get("/version")
 def obtener_version():
-    return {
-        "version": "1.0.33",
-        "mensaje": "Papelera POS actualizado",
-        "url": "https://github.com/juanlopezlp120462-coder/papelera-pos-desktop/releases/download/v1.0.33/UPDATE.zip"
-    }
+
+    try:
+        respuesta = requests.get(
+            "https://api.github.com/repos/juanlopezlp120462-coder/papelera-pos-desktop/releases/latest",
+            timeout=10
+        )
+
+        respuesta.raise_for_status()
+
+        release = respuesta.json()
+
+        version = release["tag_name"].replace("v", "")
+
+        url_update = None
+
+        for archivo in release.get("assets", []):
+
+            if archivo["name"] == "UPDATE.zip":
+                url_update = archivo["browser_download_url"]
+                break
+
+
+        if not url_update:
+            return {
+                "version": version,
+                "mensaje": "No se encontró UPDATE.zip",
+                "url": None
+            }
+
+
+        return {
+            "version": version,
+            "mensaje": "Papelera POS actualizado",
+            "url": url_update
+        }
+
+
+    except Exception as e:
+
+        return {
+            "version": "0.0.0",
+            "mensaje": str(e),
+            "url": None
+        }
 
     archivo = os.path.join(
         os.path.dirname(__file__),
