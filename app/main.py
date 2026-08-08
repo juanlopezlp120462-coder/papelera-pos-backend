@@ -38,32 +38,23 @@ def obtener_version():
 
         for archivo in release.get("assets", []):
 
-            if archivo["name"].lower().endswith(".zip"):
-                url_update = archivo["browser_download_url"]
-                break
+            nombre = archivo.get("name", "").lower()
 
+            if nombre.endswith(".zip"):
+                url_update = archivo.get("browser_download_url")
+                break
 
         if not url_update:
             return {
                 "version": version,
-                "mensaje": "No se encontró UPDATE.zip",
+                "mensaje": "No se encontró archivo ZIP",
                 "url": None
             }
-
 
         return {
             "version": version,
             "mensaje": "Papelera POS actualizado",
             "url": url_update
-        }
-
-
-    except Exception as e:
-
-        return {
-            "version": "0.0.0",
-            "mensaje": str(e),
-            "url": None
         }
 
     except Exception as e:
