@@ -66,21 +66,13 @@ def obtener_version():
             "url": None
         }
 
-    archivo = os.path.join(
-        os.path.dirname(__file__),
-        "version.json"
-    )
+    except Exception as e:
 
-    with open(
-        archivo,
-        "r",
-        encoding="utf-8"
-    ) as f:
-        datos = json.load(f)
-
-    return datos
-
-
+        return {
+            "version": "0.0.0",
+            "mensaje": str(e),
+            "url": None
+        }
 # =====================================
 # CORS
 # =====================================
