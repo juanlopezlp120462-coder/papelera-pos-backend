@@ -5,6 +5,7 @@ from .database import Base
 class Producto(Base):
     __tablename__ = "productos"
     id = Column(Integer, primary_key=True, index=True)
+    uuid = Column(String, unique=True, nullable=True, index=True)
     codigo_barras = Column(String, nullable=True, index=True)
     nombre = Column(String, nullable=False)
     categoria = Column(String, nullable=True)
@@ -28,6 +29,7 @@ class Cliente(Base):
 class Venta(Base):
     __tablename__ = "ventas"
     id = Column(Integer, primary_key=True, index=True)
+    uuid = Column(String, unique=True, nullable=True, index=True)
     fecha = Column(String, nullable=False)
     total = Column(Float, nullable=False)
     forma_pago = Column(String, nullable=True)
@@ -39,6 +41,7 @@ class Venta(Base):
     pago_transferencia = Column(Float, default=0)
     pago_tarjeta = Column(Float, default=0)
     pago_cuenta = Column(Float, default=0)
+    
 
 
 class DetalleVenta(Base):
