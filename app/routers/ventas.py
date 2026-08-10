@@ -1,5 +1,5 @@
 import datetime
-
+import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -319,6 +319,9 @@ def crear_venta(
 
 
     venta = models.Venta(
+
+        uuid=str(uuid.uuid4()),
+
         fecha=datetime.datetime.now()
         .strftime("%Y-%m-%d %H:%M:%S"),
 

@@ -65,6 +65,7 @@ class VentaCreate(BaseModel):
 
 class VentaOut(BaseModel):
     id: int
+    uuid: str | None
     fecha: str
     total: float
     forma_pago: Optional[str]
