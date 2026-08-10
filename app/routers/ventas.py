@@ -1,4 +1,5 @@
 import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -6,11 +7,16 @@ from typing import List
 from .. import models, schemas
 from ..database import get_db
 
-router = APIRouter(prefix="/ventas", tags=["ventas"])
+
+router = APIRouter(
+    prefix="/ventas",
+    tags=["ventas"]
+)
 
 
 @router.get("/", response_model=List[schemas.VentaOut])
 def listar_ventas(db: Session = Depends(get_db)):
+
     return (
         db.query(models.Venta)
         .filter(models.Venta.estado == "ACTIVA")
@@ -20,8 +26,19 @@ def listar_ventas(db: Session = Depends(get_db)):
 
 
 @router.get("/{venta_id}/detalle")
-def detalle_venta(venta_id: int, db: Session = Depends(get_db)):
-    items = db.query(models.DetalleVenta).filter(models.DetalleVenta.venta_id == venta_id).all()
+def detalle_venta(
+    venta_id: int,
+    db: Session = Depends(get_db)
+):
+
+    items = (
+        db.query(models.DetalleVenta)
+        .filter(
+            models.DetalleVenta.venta_id == venta_id
+        )
+        .all()
+    )
+
     return [
         {
             "producto": d.producto,
@@ -33,96 +50,311 @@ def detalle_venta(venta_id: int, db: Session = Depends(get_db)):
         for d in items
     ]
 
+
+# ============================================
+# SINCRONIZACION OFFLINE POR UUID
+# ============================================
+
 @router.post("/sync")
-def sincronizar_venta(data: dict, db: Session = Depends(get_db)):
+def sincronizar_venta(
+    data: dict,
+    db: Session = Depends(get_db)
+):
 
     venta_uuid = data.get("uuid")
 
     if not venta_uuid:
-        raise HTTPException(400, "Falta uuid de la venta")
+        raise HTTPException(
+            400,
+            "Falta uuid de la venta"
+        )
 
-    # Si ya existe, no la duplicamos
-    existente = (
-        db.query(models.Venta)
-        .filter(models.Venta.uuid == venta_uuid)
-        .first()
-    )
-
-    if existente:
-        return {
-            "ok": True,
-            "duplicada": True,
-            "id": existente.id
-        }
 
     items = data.get("items", [])
 
     if not items:
-        raise HTTPException(400, "La venta no tiene items")
+        raise HTTPException(
+            400,
+            "La venta no tiene items"
+        )
+
 
     total = data.get("total", 0)
 
-    venta = models.Venta(
-        uuid=venta_uuid,
-        fecha=data.get("fecha") or datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        total=total,
-        forma_pago=data.get("forma_pago"),
-        cliente_id=data.get("cliente_id"),
-        descuento=data.get("descuento", 0),
-        usuario=data.get("usuario", "Administrador"),
-        pago_efectivo=data.get("pago_efectivo", 0),
-        pago_transferencia=data.get("pago_transferencia", 0),
-        pago_tarjeta=data.get("pago_tarjeta", 0),
-        pago_cuenta=data.get("pago_cuenta", 0),
+
+    existente = (
+        db.query(models.Venta)
+        .filter(
+            models.Venta.uuid == venta_uuid
+        )
+        .first()
     )
 
+
+    # =====================================
+    # SI EXISTE ACTUALIZAMOS
+    # =====================================
+
+    if existente:
+
+        existente.fecha = (
+            data.get("fecha")
+            or existente.fecha
+        )
+
+        existente.total = total
+
+        existente.forma_pago = (
+            data.get("forma_pago")
+        )
+
+        existente.cliente_id = (
+            data.get("cliente_id")
+        )
+
+        existente.descuento = (
+            data.get("descuento",0)
+        )
+
+        existente.usuario = (
+            data.get(
+                "usuario",
+                "Administrador"
+            )
+        )
+
+        existente.pago_efectivo = (
+            data.get(
+                "pago_efectivo",
+                0
+            )
+        )
+
+        existente.pago_transferencia = (
+            data.get(
+                "pago_transferencia",
+                0
+            )
+        )
+
+        existente.pago_tarjeta = (
+            data.get(
+                "pago_tarjeta",
+                0
+            )
+        )
+
+        existente.pago_cuenta = (
+            data.get(
+                "pago_cuenta",
+                0
+            )
+        )
+
+
+        # borrar detalles anteriores
+
+        db.query(models.DetalleVenta)\
+            .filter(
+                models.DetalleVenta.venta_id == existente.id
+            )\
+            .delete()
+
+
+        for item in items:
+
+            db.add(
+                models.DetalleVenta(
+                    venta_id=existente.id,
+                    producto=item.get("producto"),
+                    cantidad=item.get(
+                        "cantidad",
+                        0
+                    ),
+                    precio=item.get(
+                        "precio",
+                        0
+                    ),
+                    subtotal=item.get(
+                        "subtotal",
+                        item.get("cantidad",0)
+                        *
+                        item.get("precio",0)
+                    ),
+                    codigo=item.get("codigo")
+                )
+            )
+
+
+        db.commit()
+
+
+        return {
+            "ok": True,
+            "actualizada": True,
+            "id": existente.id
+        }
+
+
+
+    # =====================================
+    # SI NO EXISTE CREAMOS
+    # =====================================
+
+
+    venta = models.Venta(
+
+        uuid=venta_uuid,
+
+        fecha=data.get(
+            "fecha"
+        )
+        or datetime.datetime.now()
+        .strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+
+        total=total,
+
+        forma_pago=data.get(
+            "forma_pago"
+        ),
+
+        cliente_id=data.get(
+            "cliente_id"
+        ),
+
+        descuento=data.get(
+            "descuento",
+            0
+        ),
+
+        usuario=data.get(
+            "usuario",
+            "Administrador"
+        ),
+
+        pago_efectivo=data.get(
+            "pago_efectivo",
+            0
+        ),
+
+        pago_transferencia=data.get(
+            "pago_transferencia",
+            0
+        ),
+
+        pago_tarjeta=data.get(
+            "pago_tarjeta",
+            0
+        ),
+
+        pago_cuenta=data.get(
+            "pago_cuenta",
+            0
+        )
+    )
+
+
     db.add(venta)
+
     db.flush()
 
+
     for item in items:
+
         db.add(
             models.DetalleVenta(
                 venta_id=venta.id,
                 producto=item.get("producto"),
-                cantidad=item.get("cantidad", 0),
-                precio=item.get("precio", 0),
-                subtotal=item.get("subtotal", 0),
-                codigo=item.get("codigo"),
+                cantidad=item.get(
+                    "cantidad",
+                    0
+                ),
+                precio=item.get(
+                    "precio",
+                    0
+                ),
+                subtotal=item.get(
+                    "subtotal",
+                    0
+                ),
+                codigo=item.get("codigo")
             )
         )
 
+
     db.commit()
+
 
     return {
         "ok": True,
-        "duplicada": False,
+        "creada": True,
         "id": venta.id
     }
 
-@router.post("/", response_model=schemas.VentaOut)
-def crear_venta(data: schemas.VentaCreate, db: Session = Depends(get_db)):
-    if not data.items:
-        raise HTTPException(400, "La venta no tiene items")
 
-    total = sum(i.cantidad * i.precio for i in data.items) - data.descuento
+
+@router.post("/", response_model=schemas.VentaOut)
+def crear_venta(
+    data: schemas.VentaCreate,
+    db: Session = Depends(get_db)
+):
+
+    if not data.items:
+        raise HTTPException(
+            400,
+            "La venta no tiene items"
+        )
+
+
+    total = (
+        sum(
+            i.cantidad * i.precio
+            for i in data.items
+        )
+        -
+        data.descuento
+    )
+
 
     venta = models.Venta(
-        fecha=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        fecha=datetime.datetime.now()
+        .strftime("%Y-%m-%d %H:%M:%S"),
+
         total=total,
+
         forma_pago=data.forma_pago,
+
         cliente_id=data.cliente_id,
+
         descuento=data.descuento,
+
         usuario=data.usuario,
+
         pago_efectivo=data.pago_efectivo,
+
         pago_transferencia=data.pago_transferencia,
+
         pago_tarjeta=data.pago_tarjeta,
+
         pago_cuenta=data.pago_cuenta,
     )
+
+
     db.add(venta)
-    db.flush()  # para obtener venta.id antes del commit
+
+    db.flush()
+
 
     for item in data.items:
-        subtotal = item.cantidad * item.precio
+
+        subtotal = (
+            item.cantidad *
+            item.precio
+        )
+
+
         db.add(
             models.DetalleVenta(
                 venta_id=venta.id,
@@ -133,22 +365,39 @@ def crear_venta(data: schemas.VentaCreate, db: Session = Depends(get_db)):
                 codigo=item.codigo,
             )
         )
-        # descontar stock si el item está vinculado a un producto
-        if item.producto_id:
-            prod = db.query(models.Producto).get(item.producto_id)
-            if prod:
-                prod.stock = max(0, prod.stock - item.cantidad)
+
 
     db.commit()
+
     db.refresh(venta)
+
     return venta
 
 
+
 @router.post("/{venta_id}/anular")
-def anular_venta(venta_id: int, db: Session = Depends(get_db)):
-    venta = db.query(models.Venta).get(venta_id)
+def anular_venta(
+    venta_id: int,
+    db: Session = Depends(get_db)
+):
+
+    venta = (
+        db.query(models.Venta)
+        .get(venta_id)
+    )
+
     if not venta:
-        raise HTTPException(404, "Venta no encontrada")
+        raise HTTPException(
+            404,
+            "Venta no encontrada"
+        )
+
+
     venta.estado = "ANULADA"
+
     db.commit()
-    return {"ok": True}
+
+
+    return {
+        "ok": True
+    }
