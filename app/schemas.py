@@ -14,6 +14,19 @@ class ProductoBase(BaseModel):
 
 class ProductoCreate(ProductoBase):
     pass
+class ProductoCreate(ProductoBase):
+    pass
+
+
+class ProductoSync(BaseModel):
+    uuid: str
+    codigo_barras: Optional[str] = None
+    nombre: str
+    categoria: Optional[str] = None
+    precio_compra: float = 0
+    precio_venta: float = 0
+    stock: int = 0
+    stock_minimo: int = 5
 
 
 class ProductoOut(ProductoBase):

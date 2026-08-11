@@ -50,3 +50,58 @@ def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
     db.delete(p)
     db.commit()
     return {"ok": True}
+@router.post("/sync")
+def sincronizar_producto(
+    data: schemas.ProductoSync,
+    db: Session = Depends(get_db)
+):
+
+    producto = (
+        db.query(models.Producto)
+        .filter(
+            models.Producto.uuid == data.uuid
+        )
+        .first()
+    )
+
+
+    if producto:
+
+        producto.codigo_barras = data.codigo_barras
+        producto.nombre = data.nombre
+        producto.categoria = data.categoria
+        producto.precio_compra = data.precio_compra
+        producto.precio_venta = data.precio_venta
+        producto.stock = data.stock
+        producto.stock_minimo = data.stock_minimo
+
+        db.commit()
+        db.refresh(producto)
+
+        return {
+            "actualizada": True,
+            "id": producto.id
+        }
+
+
+    nuevo = models.Producto(
+        uuid=data.uuid,
+        codigo_barras=data.codigo_barras,
+        nombre=data.nombre,
+        categoria=data.categoria,
+        precio_compra=data.precio_compra,
+        precio_venta=data.precio_venta,
+        stock=data.stock,
+        stock_minimo=data.stock_minimo
+    )
+
+
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+
+
+    return {
+        "creada": True,
+        "id": nuevo.id
+    }
