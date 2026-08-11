@@ -31,10 +31,10 @@ class ProductoSync(BaseModel):
 
 class ProductoOut(ProductoBase):
     id: int
+    uuid: str | None = None
 
     class Config:
         from_attributes = True
-
 
 class ClienteBase(BaseModel):
     nombre: str
