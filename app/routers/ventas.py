@@ -163,24 +163,21 @@ def sincronizar_venta(
 
         for item in items:
 
+            cantidad = item.get("cantidad", 0)
+            precio = item.get("precio", 0)
+
+            subtotal = item.get(
+                "subtotal",
+                cantidad * precio
+            )
+
             db.add(
                 models.DetalleVenta(
-                    venta_id=existente.id,
+                    venta_id=venta.id,
                     producto=item.get("producto"),
-                    cantidad=item.get(
-                        "cantidad",
-                        0
-                    ),
-                    precio=item.get(
-                        "precio",
-                        0
-                    ),
-                    subtotal=item.get(
-                        "subtotal",
-                        item.get("cantidad",0)
-                        *
-                        item.get("precio",0)
-                    ),
+                    cantidad=cantidad,
+                    precio=precio,
+                    subtotal=subtotal,
                     codigo=item.get("codigo")
                 )
             )
