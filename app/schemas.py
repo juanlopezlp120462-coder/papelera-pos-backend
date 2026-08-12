@@ -14,8 +14,6 @@ class ProductoBase(BaseModel):
 
 class ProductoCreate(ProductoBase):
     pass
-class ProductoCreate(ProductoBase):
-    pass
 
 
 class ProductoSync(BaseModel):
@@ -35,6 +33,7 @@ class ProductoOut(ProductoBase):
 
     class Config:
         from_attributes = True
+
 
 class ClienteBase(BaseModel):
     nombre: str
@@ -104,6 +103,23 @@ class MovimientoCajaOut(MovimientoCajaCreate):
 
     class Config:
         from_attributes = True
+
+
+class ArqueoCreate(BaseModel):
+    uuid: Optional[str] = None
+    fecha: str
+    apertura: float = 0
+    esperado: float = 0
+    real: float = 0
+    diferencia: float = 0
+    usuario: Optional[str] = "Administrador"
+    observaciones: Optional[str] = None
+    ventas_total: float = 0
+    ventas_efectivo: float = 0
+    ventas_transferencia: float = 0
+    ventas_tarjeta: float = 0
+    ventas_cuenta: float = 0
+    cantidad_ventas: int = 0
 
 
 class PedidoCreate(BaseModel):

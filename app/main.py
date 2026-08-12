@@ -23,8 +23,15 @@ app = FastAPI(title="Papelera POS - API")
 def obtener_version():
 
     try:
+        # Configurar token de GitHub para evitar el error 403 (Rate Limit)
+        headers = {}
+        token = os.getenv("GITHUB_TOKEN")
+        if token:
+            headers["Authorization"] = f"token {token}"
+
         respuesta = requests.get(
             "https://api.github.com/repos/juanlopezlp120462-coder/papelera-pos-desktop/releases/latest",
+            headers=headers,
             timeout=10
         )
 

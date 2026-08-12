@@ -90,6 +90,7 @@ class MovimientoCaja(Base):
 class Arqueo(Base):
     __tablename__ = "arqueos"
     id = Column(Integer, primary_key=True, index=True)
+    uuid = Column(String, unique=True, nullable=True, index=True)
     fecha = Column(String, nullable=False)
     apertura = Column(Float, nullable=True)
     esperado = Column(Float, nullable=True)

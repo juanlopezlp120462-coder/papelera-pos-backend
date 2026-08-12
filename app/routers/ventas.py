@@ -171,9 +171,10 @@ def sincronizar_venta(
                 cantidad * precio
             )
 
+            # CORREGIDO AQUÍ: Se usa existente.id de forma segura[cite: 11]
             db.add(
                 models.DetalleVenta(
-                    venta_id=venta.id,
+                    venta_id=existente.id,
                     producto=item.get("producto"),
                     cantidad=cantidad,
                     precio=precio,
