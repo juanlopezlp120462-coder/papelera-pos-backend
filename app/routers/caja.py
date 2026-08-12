@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -12,6 +12,10 @@ router = APIRouter(prefix="/caja", tags=["caja"])
 # =========================
 # MOVIMIENTOS
 # =========================
+@router.get("/estado")
+def estado_caja(db: Session = Depends(get_db)):
+    venta_activa = db.query(models.Venta).filter(models.Venta.estado == "ACTIVA").first()
+    return {"caja_abierta": venta_activa is not None}
 
 @router.get("/movimientos", response_model=List[schemas.MovimientoCajaOut])
 def listar_movimientos(db: Session = Depends(get_db)):
