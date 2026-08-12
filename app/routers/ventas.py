@@ -114,7 +114,7 @@ def sincronizar_venta(data: dict, db: Session = Depends(get_db)):
         ))
 
         # Actualizar stock si existe el producto
-        prod = db.query(models.Producto).filter(models.Producto.codigo == codigo).first()
+        prod = db.query(models.Producto).filter(models.Producto.codigo_barras == codigo).first()
         if prod:
             prod.stock -= cantidad
 
