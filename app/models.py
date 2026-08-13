@@ -79,7 +79,9 @@ class DetallePedido(Base):
 
 class MovimientoCaja(Base):
     __tablename__ = "movimientos_caja"
+
     id = Column(Integer, primary_key=True, index=True)
+    uuid = Column(String, unique=True, nullable=True, index=True)
     fecha = Column(String, nullable=False)
     tipo = Column(String, nullable=False)
     importe = Column(Float, nullable=False)

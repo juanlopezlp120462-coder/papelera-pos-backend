@@ -1,5 +1,6 @@
-import datetime
 import uuid
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -9,47 +10,175 @@ from ..database import get_db
 
 router = APIRouter(prefix="/caja", tags=["caja"])
 
+
 # =========================
 # MOVIMIENTOS
 # =========================
+
 @router.get("/estado")
 def estado_caja(db: Session = Depends(get_db)):
-    venta_activa = db.query(models.Venta).filter(models.Venta.estado == "ACTIVA").first()
-    return {"caja_abierta": venta_activa is not None}
+    venta_activa = db.query(models.Venta).filter(
+        models.Venta.estado == "ACTIVA"
+    ).first()
 
-@router.get("/movimientos", response_model=List[schemas.MovimientoCajaOut])
-def listar_movimientos(db: Session = Depends(get_db)):
-    return db.query(models.MovimientoCaja).order_by(models.MovimientoCaja.id.desc()).all()
+    return {
+        "caja_abierta": venta_activa is not None
+    }
 
 
-@router.post("/movimientos", response_model=schemas.MovimientoCajaOut)
-def crear_movimiento(data: schemas.MovimientoCajaCreate, db: Session = Depends(get_db)):
-    m = models.MovimientoCaja(
-        fecha=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        **data.dict(),
+@router.get(
+    "/movimientos",
+    response_model=List[schemas.MovimientoCajaOut]
+)
+def listar_movimientos(
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(models.MovimientoCaja)
+        .order_by(models.MovimientoCaja.id.desc())
+        .all()
     )
+
+
+@router.post(
+    "/movimientos",
+    response_model=schemas.MovimientoCajaOut
+)
+def crear_movimiento(
+    data: schemas.MovimientoCajaCreate,
+    db: Session = Depends(get_db)
+):
+    # ==========================================
+    # GENERAR UUID SI NO VIENE DESDE EL CLIENTE
+    # ==========================================
+
+    import uuid
+
+    movimiento_uuid = data.uuid
+
+    if not movimiento_uuid:
+        movimiento_uuid = str(uuid.uuid4())
+
+    # ==========================================
+    # EVITAR DUPLICADOS
+    # ==========================================
+
+    existente = (
+        db.query(models.MovimientoCaja)
+        .filter(
+            models.MovimientoCaja.uuid == movimiento_uuid
+        )
+        .first()
+    )
+
+    if existente:
+        return existente
+
+    # ==========================================
+    # CREAR MOVIMIENTO
+    # ==========================================
+
+    fecha = data.fecha
+
+    if not fecha:
+        fecha = datetime.datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    m = models.MovimientoCaja(
+        uuid=movimiento_uuid,
+        fecha=fecha,
+        tipo=data.tipo,
+        importe=data.importe,
+        concepto=data.concepto,
+        usuario=data.usuario
+    )
+
     db.add(m)
     db.commit()
     db.refresh(m)
+
     return m
 
 
 @router.post("/movimientos/sync")
-def sincronizar_movimientos(movimientos: List[schemas.MovimientoCajaCreate], db: Session = Depends(get_db)):
+def sincronizar_movimientos(
+    movimientos: List[schemas.MovimientoCajaCreate],
+    db: Session = Depends(get_db)
+):
+    import uuid
+
+    sincronizados = 0
+    existentes = 0
+
     for data in movimientos:
-        datos_dict = data.dict()
-        if "fecha" not in datos_dict or not datos_dict["fecha"]:
-            datos_dict["fecha"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-        m = models.MovimientoCaja(**datos_dict)
+
+        # ==========================================
+        # UUID
+        # ==========================================
+
+        movimiento_uuid = data.uuid
+
+        if not movimiento_uuid:
+            movimiento_uuid = str(uuid.uuid4())
+
+        # ==========================================
+        # COMPROBAR SI YA EXISTE
+        # ==========================================
+
+        existente = (
+            db.query(models.MovimientoCaja)
+            .filter(
+                models.MovimientoCaja.uuid == movimiento_uuid
+            )
+            .first()
+        )
+
+        if existente:
+            existentes += 1
+            continue
+
+        # ==========================================
+        # FECHA
+        # ==========================================
+
+        fecha = data.fecha
+
+        if not fecha:
+            fecha = datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+        # ==========================================
+        # CREAR
+        # ==========================================
+
+        m = models.MovimientoCaja(
+            uuid=movimiento_uuid,
+            fecha=fecha,
+            tipo=data.tipo,
+            importe=data.importe,
+            concepto=data.concepto,
+            usuario=data.usuario
+        )
+
         db.add(m)
-        
+
+        sincronizados += 1
+
     db.commit()
-    return {"status": "success", "sincronizados": len(movimientos)}
+
+    return {
+        "status": "success",
+        "sincronizados": sincronizados,
+        "existentes": existentes
+    }
+
 
 # =========================
 # ARQUEOS
 # =========================
+
 
 @router.get("/arqueos")
 def listar_arqueos(db: Session = Depends(get_db)):

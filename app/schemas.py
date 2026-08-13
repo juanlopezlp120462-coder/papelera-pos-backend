@@ -95,6 +95,8 @@ class VentaOut(BaseModel):
 
 
 class MovimientoCajaCreate(BaseModel):
+    uuid: Optional[str] = None
+    fecha: Optional[str] = None
     tipo: str
     importe: float
     concepto: Optional[str] = None
@@ -103,7 +105,6 @@ class MovimientoCajaCreate(BaseModel):
 
 class MovimientoCajaOut(MovimientoCajaCreate):
     id: int
-    fecha: str
 
     class Config:
         from_attributes = True
