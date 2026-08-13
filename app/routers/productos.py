@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -23,7 +25,7 @@ def obtener_producto(producto_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=schemas.ProductoOut)
 def crear_producto(data: schemas.ProductoCreate, db: Session = Depends(get_db)):
-    p = models.Producto(**data.dict())
+    p = models.Producto(uuid=str(uuid4()), **data.dict())
     db.add(p)
     db.commit()
     db.refresh(p)
@@ -105,3 +107,4 @@ def sincronizar_producto(
         "creada": True,
         "id": nuevo.id
     }
+

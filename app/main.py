@@ -6,7 +6,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base
-from .routers import productos, clientes, ventas, caja, pedidos, configuracion
+from .routers import (
+    productos,
+    clientes,
+    ventas,
+    caja,
+    pedidos,
+    configuracion,
+    reportes,
+    historial
+)
 
 
 Base.metadata.create_all(bind=engine)
@@ -94,6 +103,8 @@ app.include_router(ventas.router)
 app.include_router(caja.router)
 app.include_router(pedidos.router)
 app.include_router(configuracion.router)
+app.include_router(reportes.router)
+app.include_router(historial.router)
 
 
 # =====================================

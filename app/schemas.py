@@ -85,6 +85,10 @@ class VentaOut(BaseModel):
     estado: str
     descuento: float
     usuario: str
+    pago_efectivo: float = 0
+    pago_transferencia: float = 0
+    pago_tarjeta: float = 0
+    pago_cuenta: float = 0
 
     class Config:
         from_attributes = True
