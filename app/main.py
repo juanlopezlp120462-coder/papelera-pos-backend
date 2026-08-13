@@ -117,3 +117,48 @@ def raiz():
         "status": "ok",
         "mensaje": "API de Papelera POS funcionando"
     }
+
+@app.get("/LIMPIAR_PRUEBAS_2026")
+def limpiar_pruebas():
+
+    from .database import SessionLocal
+    from . import models
+
+    db = SessionLocal()
+
+    try:
+        detalles = db.query(models.DetalleVenta).delete(
+            synchronize_session=False
+        )
+
+        ventas = db.query(models.Venta).delete(
+            synchronize_session=False
+        )
+
+        productos = db.query(models.Producto).delete(
+            synchronize_session=False
+        )
+
+        db.commit()
+
+        return {
+            "ok": True,
+            "detalles_eliminados": detalles,
+            "ventas_eliminadas": ventas,
+            "productos_eliminados": productos,
+            "productos_restantes": db.query(models.Producto).count(),
+            "ventas_restantes": db.query(models.Venta).count(),
+            "detalles_restantes": db.query(models.DetalleVenta).count()
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        return {
+            "ok": False,
+            "error": str(e)
+        }
+
+    finally:
+        db.close()
