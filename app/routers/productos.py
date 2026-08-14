@@ -1,4 +1,4 @@
-from uuid import uuid4
+﻿from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -52,6 +52,41 @@ def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
     db.delete(p)
     db.commit()
     return {"ok": True}
+
+# ==========================================================
+# ELIMINAR PRODUCTO POR UUID
+# USADO POR LA SINCRONIZACION
+# ==========================================================
+
+@router.delete("/sync/{producto_uuid}")
+def eliminar_producto_sync(
+    producto_uuid: str,
+    db: Session = Depends(get_db)
+):
+
+    producto = (
+        db.query(models.Producto)
+        .filter(
+            models.Producto.uuid == producto_uuid
+        )
+        .first()
+    )
+
+    if not producto:
+
+        return {
+            "eliminado": False,
+            "ya_no_existe": True
+        }
+
+    db.delete(producto)
+    db.commit()
+
+    return {
+        "eliminado": True,
+        "uuid": producto_uuid
+    }
+
 @router.post("/sync")
 def sincronizar_producto(
     data: schemas.ProductoSync,
@@ -107,4 +142,5 @@ def sincronizar_producto(
         "creada": True,
         "id": nuevo.id
     }
+
 
