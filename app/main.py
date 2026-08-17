@@ -21,6 +21,57 @@ from .routers import (
 Base.metadata.create_all(bind=engine)
 
 
+# ============================================
+# MIGRACIÓN DE LA TABLA VENTAS
+# ============================================
+
+def actualizar_tabla_ventas():
+
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+
+    tablas = inspector.get_table_names()
+
+    if "ventas" not in tablas:
+        return
+
+    columnas = {
+        columna["name"]
+        for columna in inspector.get_columns("ventas")
+    }
+
+    nuevas_columnas = []
+
+    if "origen" not in columnas:
+        nuevas_columnas.append(
+            "ALTER TABLE ventas ADD COLUMN origen VARCHAR"
+        )
+
+    if "pedido_id" not in columnas:
+        nuevas_columnas.append(
+            "ALTER TABLE ventas ADD COLUMN pedido_id INTEGER"
+        )
+
+    if "tipo" not in columnas:
+        nuevas_columnas.append(
+            "ALTER TABLE ventas ADD COLUMN tipo VARCHAR"
+        )
+
+    if not nuevas_columnas:
+        return
+
+    with engine.begin() as conexion:
+
+        for sentencia in nuevas_columnas:
+            conexion.execute(
+                text(sentencia)
+            )
+
+
+actualizar_tabla_ventas()
+
+
 app = FastAPI(title="Papelera POS - API")
 
 

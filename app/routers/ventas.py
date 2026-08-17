@@ -20,10 +20,15 @@ router = APIRouter(
 # ============================================
 
 @router.get("/caja/estado")
-def estado_caja(db: Session = Depends(get_db)):
+def estado_caja(
+    db: Session = Depends(get_db)
+):
+
     pendientes = (
         db.query(models.Venta)
-        .filter(models.Venta.estado == "ACTIVA")
+        .filter(
+            models.Venta.estado == "ACTIVA"
+        )
         .count()
     )
 
@@ -36,13 +41,22 @@ def estado_caja(db: Session = Depends(get_db)):
 # LISTAR VENTAS
 # ============================================
 
-@router.get("/", response_model=List[schemas.VentaOut])
-def listar_ventas(db: Session = Depends(get_db)):
+@router.get(
+    "/",
+    response_model=List[schemas.VentaOut]
+)
+def listar_ventas(
+    db: Session = Depends(get_db)
+):
 
     return (
         db.query(models.Venta)
-        .filter(models.Venta.estado == "ACTIVA")
-        .order_by(models.Venta.id.desc())
+        .filter(
+            models.Venta.estado == "ACTIVA"
+        )
+        .order_by(
+            models.Venta.id.desc()
+        )
         .all()
     )
 
@@ -59,7 +73,9 @@ def detalle_venta(
 
     items = (
         db.query(models.DetalleVenta)
-        .filter(models.DetalleVenta.venta_id == venta_id)
+        .filter(
+            models.DetalleVenta.venta_id == venta_id
+        )
         .all()
     )
 
@@ -89,12 +105,14 @@ def sincronizar_venta(
     items = data.get("items", [])
 
     if not venta_uuid:
+
         raise HTTPException(
             status_code=400,
             detail="Falta uuid de la venta"
         )
 
     if not items:
+
         raise HTTPException(
             status_code=400,
             detail="La venta no tiene items"
@@ -105,12 +123,30 @@ def sincronizar_venta(
     # ========================================
 
     try:
-        total = float(data.get("total", 0))
-        pago_efectivo = float(data.get("pago_efectivo", 0))
-        pago_transferencia = float(data.get("pago_transferencia", 0))
-        pago_tarjeta = float(data.get("pago_tarjeta", 0))
-        pago_cuenta = float(data.get("pago_cuenta", 0))
-        descuento = float(data.get("descuento", 0))
+
+        total = float(
+            data.get("total", 0)
+        )
+
+        pago_efectivo = float(
+            data.get("pago_efectivo", 0)
+        )
+
+        pago_transferencia = float(
+            data.get("pago_transferencia", 0)
+        )
+
+        pago_tarjeta = float(
+            data.get("pago_tarjeta", 0)
+        )
+
+        pago_cuenta = float(
+            data.get("pago_cuenta", 0)
+        )
+
+        descuento = float(
+            data.get("descuento", 0)
+        )
 
     except (ValueError, TypeError):
 
@@ -120,12 +156,22 @@ def sincronizar_venta(
         )
 
     # ========================================
+    # DATOS DE ORIGEN
+    # ========================================
+
+    origen = data.get("origen")
+    pedido_id = data.get("pedido_id")
+    tipo = data.get("tipo")
+
+    # ========================================
     # BUSCAR VENTA POR UUID
     # ========================================
 
     existente = (
         db.query(models.Venta)
-        .filter(models.Venta.uuid == venta_uuid)
+        .filter(
+            models.Venta.uuid == venta_uuid
+        )
         .first()
     )
 
@@ -161,18 +207,45 @@ def sincronizar_venta(
             existente.usuario or "Administrador"
         )
 
-        existente.pago_efectivo = pago_efectivo
-        existente.pago_transferencia = pago_transferencia
-        existente.pago_tarjeta = pago_tarjeta
-        existente.pago_cuenta = pago_cuenta
+        existente.pago_efectivo = (
+            pago_efectivo
+        )
+
+        existente.pago_transferencia = (
+            pago_transferencia
+        )
+
+        existente.pago_tarjeta = (
+            pago_tarjeta
+        )
+
+        existente.pago_cuenta = (
+            pago_cuenta
+        )
+
+        # ====================================
+        # CONSERVAR IDENTIFICACION
+        # DEL PEDIDO
+        # ====================================
+
+        if origen is not None:
+            existente.origen = origen
+
+        if pedido_id is not None:
+            existente.pedido_id = pedido_id
+
+        if tipo is not None:
+            existente.tipo = tipo
 
         # ------------------------------------
-        # IMPORTANTE:
-        # NO descontamos stock nuevamente.
+        # NO DESCONTAR STOCK NUEVAMENTE
         # ------------------------------------
 
-        db.query(models.DetalleVenta).filter(
-            models.DetalleVenta.venta_id == existente.id
+        db.query(
+            models.DetalleVenta
+        ).filter(
+            models.DetalleVenta.venta_id
+            == existente.id
         ).delete()
 
     # ========================================
@@ -181,27 +254,66 @@ def sincronizar_venta(
 
     else:
 
+        # ------------------------------------
+        # Si no viene origen, por seguridad
+        # asumimos que es una venta normal.
+        # ------------------------------------
+
+        if not origen:
+            origen = "VENTA"
+
+        if not tipo:
+            tipo = "VENTA"
+
         existente = models.Venta(
+
             uuid=venta_uuid,
+
             estado="ACTIVA",
+
             fecha=(
                 data.get("fecha")
                 or datetime.datetime.now().strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
             ),
+
             total=total,
-            forma_pago=data.get("forma_pago"),
-            cliente_id=data.get("cliente_id"),
+
+            forma_pago=data.get(
+                "forma_pago"
+            ),
+
+            cliente_id=data.get(
+                "cliente_id"
+            ),
+
             descuento=descuento,
+
             usuario=data.get(
                 "usuario",
                 "Administrador"
             ),
+
             pago_efectivo=pago_efectivo,
-            pago_transferencia=pago_transferencia,
+
+            pago_transferencia=(
+                pago_transferencia
+            ),
+
             pago_tarjeta=pago_tarjeta,
-            pago_cuenta=pago_cuenta
+
+            pago_cuenta=pago_cuenta,
+
+            # =================================
+            # IDENTIFICACION DEL ORIGEN
+            # =================================
+
+            origen=origen,
+
+            pedido_id=pedido_id,
+
+            tipo=tipo
         )
 
         db.add(existente)
@@ -215,6 +327,7 @@ def sincronizar_venta(
     for item in items:
 
         try:
+
             cantidad = float(
                 item.get("cantidad", 0)
             )
@@ -241,31 +354,43 @@ def sincronizar_venta(
 
         db.add(
             models.DetalleVenta(
+
                 venta_id=existente.id,
-                producto=item.get("producto"),
+
+                producto=item.get(
+                    "producto"
+                ),
+
                 cantidad=cantidad,
+
                 precio=precio,
+
                 subtotal=subtotal,
+
                 codigo=codigo
             )
         )
 
         # ====================================
-        # DESCONTAR STOCK SOLAMENTE SI ES
-        # UNA VENTA NUEVA
+        # DESCONTAR STOCK SOLAMENTE
+        # SI ES UNA VENTA NUEVA
         # ====================================
 
         if venta_nueva:
 
             prod = (
-                db.query(models.Producto)
+                db.query(
+                    models.Producto
+                )
                 .filter(
-                    models.Producto.codigo_barras == codigo
+                    models.Producto.codigo_barras
+                    == codigo
                 )
                 .first()
             )
 
             if prod:
+
                 prod.stock -= cantidad
 
     # ========================================
@@ -278,7 +403,10 @@ def sincronizar_venta(
         "ok": True,
         "id": existente.id,
         "uuid": venta_uuid,
-        "nueva": venta_nueva
+        "nueva": venta_nueva,
+        "origen": existente.origen,
+        "pedido_id": existente.pedido_id,
+        "tipo": existente.tipo
     }
 
 
@@ -286,13 +414,17 @@ def sincronizar_venta(
 # CREAR VENTA NORMAL
 # ============================================
 
-@router.post("/", response_model=schemas.VentaOut)
+@router.post(
+    "/",
+    response_model=schemas.VentaOut
+)
 def crear_venta(
     data: schemas.VentaCreate,
     db: Session = Depends(get_db)
 ):
 
     if not data.items:
+
         raise HTTPException(
             status_code=400,
             detail="La venta no tiene items"
@@ -307,20 +439,46 @@ def crear_venta(
     )
 
     venta = models.Venta(
-        uuid=str(uuid.uuid4()),
+
+        uuid=str(
+            uuid.uuid4()
+        ),
+
         estado="ACTIVA",
+
         fecha=datetime.datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         ),
+
         total=total,
+
         forma_pago=data.forma_pago,
+
         cliente_id=data.cliente_id,
+
         descuento=data.descuento,
+
         usuario=data.usuario,
+
         pago_efectivo=data.pago_efectivo,
-        pago_transferencia=data.pago_transferencia,
+
+        pago_transferencia=(
+            data.pago_transferencia
+        ),
+
         pago_tarjeta=data.pago_tarjeta,
+
         pago_cuenta=data.pago_cuenta,
+
+        # ====================================
+        # VENTA NORMAL
+        # ====================================
+
+        origen="VENTA",
+
+        pedido_id=None,
+
+        tipo="VENTA"
     )
 
     db.add(venta)
@@ -335,14 +493,21 @@ def crear_venta(
 
         db.add(
             models.DetalleVenta(
+
                 venta_id=venta.id,
+
                 producto=item.producto,
+
                 cantidad=item.cantidad,
+
                 precio=item.precio,
+
                 subtotal=(
-                    item.cantidad * item.precio
+                    item.cantidad
+                    * item.precio
                 ),
-                codigo=item.codigo,
+
+                codigo=item.codigo
             )
         )
 
@@ -351,14 +516,18 @@ def crear_venta(
         # ====================================
 
         prod = (
-            db.query(models.Producto)
+            db.query(
+                models.Producto
+            )
             .filter(
-                models.Producto.codigo_barras == item.codigo
+                models.Producto.codigo_barras
+                == item.codigo
             )
             .first()
         )
 
         if prod:
+
             prod.stock -= item.cantidad
 
     db.commit()
@@ -380,11 +549,14 @@ def anular_venta(
 
     venta = (
         db.query(models.Venta)
-        .filter(models.Venta.id == venta_id)
+        .filter(
+            models.Venta.id == venta_id
+        )
         .first()
     )
 
     if not venta:
+
         raise HTTPException(
             status_code=404,
             detail="Venta no encontrada"
@@ -395,9 +567,12 @@ def anular_venta(
     # ========================================
 
     items = (
-        db.query(models.DetalleVenta)
+        db.query(
+            models.DetalleVenta
+        )
         .filter(
-            models.DetalleVenta.venta_id == venta_id
+            models.DetalleVenta.venta_id
+            == venta_id
         )
         .all()
     )
@@ -405,14 +580,18 @@ def anular_venta(
     for item in items:
 
         prod = (
-            db.query(models.Producto)
+            db.query(
+                models.Producto
+            )
             .filter(
-                models.Producto.codigo_barras == item.codigo
+                models.Producto.codigo_barras
+                == item.codigo
             )
             .first()
         )
 
         if prod:
+
             prod.stock += item.cantidad
 
     venta.estado = "ANULADA"
